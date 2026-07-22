@@ -4,6 +4,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
@@ -43,6 +44,19 @@ public class SettingsScreen extends AbstractMenuScreen {
             optionsRow.add(button).width(100f).height(60f).pad(8f);
         }
 
+        Label volumeTitle = new Label("Громкость музыки", game.assets.getSkin());
+
+        Slider volumeSlider = new Slider(0f, 1f, 0.01f, false, game.assets.getSkin());
+        volumeSlider.setValue(game.settings.getMusicVolume());
+        volumeSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                float volume = volumeSlider.getValue();
+                game.settings.setMusicVolume(volume);
+                game.assets.setUserVolumeMultiplier(volume);
+            }
+        });
+
         TextButton backButton = new TextButton("Назад", game.assets.getSkin());
         backButton.addListener(new ClickListener() {
             @Override
@@ -53,6 +67,8 @@ public class SettingsScreen extends AbstractMenuScreen {
 
         root.add(title).padBottom(30f).row();
         root.add(optionsRow).padBottom(30f).row();
+        root.add(volumeTitle).padBottom(10f).row();
+        root.add(volumeSlider).width(240f).padBottom(30f).row();
         root.add(backButton).width(240f).height(60f);
     }
 }

@@ -5,13 +5,18 @@ import com.badlogic.gdx.physics.box2d.ContactImpulse;
 import com.badlogic.gdx.physics.box2d.ContactListener;
 import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.utils.Array;
-import com.mygdx.arcanoid.entities.Ball;
-import com.mygdx.arcanoid.entities.Brick;
+import com.mygdx.arcanoid.objects.Ball;
+import com.mygdx.arcanoid.objects.Brick;
+import com.mygdx.arcanoid.objects.Modifier;
+import com.mygdx.arcanoid.objects.Paddle;
 
-public class GameContactListener implements ContactListener {
+public class
+GameContactListener implements ContactListener {
 
     public final Array<Brick> bricksToBreak = new Array<>();
     public final Array<Ball> ballsLostBottom = new Array<>();
+    public final Array<Modifier> modifiersCaught = new Array<>();
+    public final Array<Modifier> modifiersLostBottom = new Array<>();
     public boolean levelComplete = false;
     public boolean anyBallContact = false;
 
@@ -22,11 +27,13 @@ public class GameContactListener implements ContactListener {
         if (a instanceof Ball || b instanceof Ball) {
             anyBallContact = true;
         }
-        handlePair(a, b);
-        handlePair(b, a);
+        handleBallPair(a, b);
+        handleBallPair(b, a);
+        handleModifierPair(a, b);
+        handleModifierPair(b, a);
     }
 
-    private void handlePair(Object first, Object second) {
+    private void handleBallPair(Object first, Object second) {
         if (!(first instanceof Ball)) {
             return;
         }
@@ -46,9 +53,28 @@ public class GameContactListener implements ContactListener {
         }
     }
 
+    private void handleModifierPair(Object first, Object second) {
+        if (!(first instanceof Modifier)) {
+            return;
+        }
+        Modifier modifier = (Modifier) first;
+
+        if (second instanceof Paddle) {
+            if (!modifiersCaught.contains(modifier, true)) {
+                modifiersCaught.add(modifier);
+            }
+        } else if (second == BoundaryType.BOTTOM_SENSOR) {
+            if (!modifiersLostBottom.contains(modifier, true)) {
+                modifiersLostBottom.add(modifier);
+            }
+        }
+    }
+
     public void reset() {
         bricksToBreak.clear();
         ballsLostBottom.clear();
+        modifiersCaught.clear();
+        modifiersLostBottom.clear();
         levelComplete = false;
         anyBallContact = false;
     }

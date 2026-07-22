@@ -12,15 +12,23 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.utils.Array;
-import com.mygdx.arcanoid.entities.BallColor;
-import com.mygdx.arcanoid.entities.BrickColor;
+import com.badlogic.gdx.math.MathUtils;
+import com.mygdx.arcanoid.objects.BallColor;
+import com.mygdx.arcanoid.objects.BrickColor;
 
 
 public class Assets {
 
+    public static final float MENU_MUSIC_VOLUME = 0.8f;
+    public static final float GAME_MUSIC_VOLUME = 0.3f;
+
     private final Array<Texture> ownedTextures = new Array<>();
+
+    private float currentBaseMusicVolume = MENU_MUSIC_VOLUME;
+    private float userVolumeMultiplier = 1f;
 
     private final Skin skin;
 
@@ -29,6 +37,8 @@ public class Assets {
     private final Texture brickRedTexture;
     private final Texture brickGreenTexture;
     private final Texture brickMetalTexture;
+    private final Texture modificatorRedTexture;
+    private final Texture modificatorGreenTexture;
     private final Texture paddleTexture;
     private final Texture obstacleTexture;
     private final Texture menuBackgroundTexture;
@@ -41,6 +51,7 @@ public class Assets {
     private final Sound bounceSound;
     private final Sound winSound;
     private final Sound loseSound;
+    private final Sound modifierSound;
 
     public Assets() {
         ballRedTexture = loadTexture("textures/ball_red.png");
@@ -48,6 +59,8 @@ public class Assets {
         brickRedTexture = loadTexture("textures/brick_red.png");
         brickGreenTexture = loadTexture("textures/brick_green.png");
         brickMetalTexture = loadTexture("textures/brick_metal.png");
+        modificatorRedTexture = loadTexture("textures/modificator_red.png");
+        modificatorGreenTexture = loadTexture("textures/modificator_green.png");
         paddleTexture = loadTexture("textures/paddle.png");
         obstacleTexture = loadTexture("textures/obstacle.png");
         menuBackgroundTexture = loadTexture("textures/menu_background.png");
@@ -58,13 +71,15 @@ public class Assets {
 
         skin = buildSkin();
 
-        backgroundMusic = loadMusicIfPresent("audio/music.ogg");
+        backgroundMusic = loadMusicIfPresent("music/back_sound.mp3");
         if (backgroundMusic != null) {
             backgroundMusic.setLooping(true);
+            applyMusicVolume();
         }
-        bounceSound = loadSoundIfPresent("audio/bounce.ogg");
-        winSound = loadSoundIfPresent("audio/win.ogg");
-        loseSound = loadSoundIfPresent("audio/lose.ogg");
+        bounceSound = loadSoundIfPresent("music/bounce_sound.wav");
+        winSound = loadSoundIfPresent("music/win_sound.wav");
+        loseSound = loadSoundIfPresent("music/defeat_sound.wav");
+        modifierSound = loadSoundIfPresent("music/modif_sound.wav");
     }
 
     private Music loadMusicIfPresent(String path) {
@@ -99,6 +114,14 @@ public class Assets {
         buttonStyle.checked = skin.newDrawable("white", new Color(0.5f, 0.5f, 0.65f, 1f));
         buttonStyle.fontColor = Color.WHITE;
         skin.add("default", buttonStyle);
+
+        Slider.SliderStyle sliderStyle = new Slider.SliderStyle();
+        sliderStyle.background = skin.newDrawable("white", new Color(0.25f, 0.25f, 0.32f, 1f));
+        sliderStyle.background.setMinHeight(8f);
+        sliderStyle.knob = skin.newDrawable("white", new Color(0.7f, 0.7f, 0.85f, 1f));
+        sliderStyle.knob.setMinWidth(20f);
+        sliderStyle.knob.setMinHeight(20f);
+        skin.add("default-horizontal", sliderStyle);
 
         return skin;
     }
@@ -167,6 +190,17 @@ public class Assets {
         }
     }
 
+    public Texture getModifierTexture(BrickColor color) {
+        switch (color) {
+            case RED:
+                return modificatorRedTexture;
+            case GREEN:
+                return modificatorGreenTexture;
+            default:
+                throw new IllegalArgumentException("Unknown modifier color: " + color);
+        }
+    }
+
     public Texture getPaddleTexture() {
         return paddleTexture;
     }
@@ -212,9 +246,35 @@ public class Assets {
         }
     }
 
+    public void playModifier() {
+        if (modifierSound != null) {
+            modifierSound.play();
+        }
+    }
+
     public void startMusic() {
         if (backgroundMusic != null && !backgroundMusic.isPlaying()) {
             backgroundMusic.play();
+        }
+    }
+
+    public void setMusicVolume(float baseVolume) {
+        currentBaseMusicVolume = baseVolume;
+        applyMusicVolume();
+    }
+
+    public void setUserVolumeMultiplier(float multiplier) {
+        userVolumeMultiplier = MathUtils.clamp(multiplier, 0f, 1f);
+        applyMusicVolume();
+    }
+
+    public float getUserVolumeMultiplier() {
+        return userVolumeMultiplier;
+    }
+
+    private void applyMusicVolume() {
+        if (backgroundMusic != null) {
+            backgroundMusic.setVolume(currentBaseMusicVolume * userVolumeMultiplier);
         }
     }
 

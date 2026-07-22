@@ -3,11 +3,11 @@ package com.mygdx.arcanoid.levels;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
-import com.mygdx.arcanoid.entities.Ball;
-import com.mygdx.arcanoid.entities.BallColor;
-import com.mygdx.arcanoid.entities.Brick;
-import com.mygdx.arcanoid.entities.BrickColor;
-import com.mygdx.arcanoid.entities.Obstacle;
+import com.mygdx.arcanoid.objects.Ball;
+import com.mygdx.arcanoid.objects.BallColor;
+import com.mygdx.arcanoid.objects.Brick;
+import com.mygdx.arcanoid.objects.BrickColor;
+import com.mygdx.arcanoid.objects.Obstacle;
 
 import static com.mygdx.arcanoid.physics.Box2DConstants.WORLD_HEIGHT;
 import static com.mygdx.arcanoid.physics.Box2DConstants.WORLD_WIDTH;
@@ -19,10 +19,10 @@ public final class LevelFactory {
     public static final float BRICK_HEIGHT_PX = 32f;
     public static final float BRICK_GUTTER_PX = 8f;
     public static final float GRID_TOP_MARGIN_PX = 24f;
-    // Ширина посчитана так, чтобы сетка вплотную заполняла мир от стены до стены.
     public static final float BRICK_WIDTH_PX = (WORLD_WIDTH - (GRID_COLS - 1) * BRICK_GUTTER_PX) / GRID_COLS;
 
     private static final int MAX_METAL_BRICKS = 5;
+    private static final int MODIFIERS_PER_COLOR = 2;
 
     private static final float OBSTACLE_WIDTH_PX = 60f;
     private static final float OBSTACLE_HEIGHT_PX = 20f;
@@ -53,6 +53,7 @@ public final class LevelFactory {
 
     private static LevelData buildLevel1(World world, float ballSpawnXPx, float ballSpawnYPx) {
         Array<Brick> bricks = buildGrid(world, (col, row) -> BrickColor.RED);
+        assignModifierBricks(bricks, BrickColor.RED);
         Array<Ball> balls = new Array<>();
         float launchAngleDeg = 90f + MathUtils.random(-LEVEL1_LAUNCH_SPREAD_DEG, LEVEL1_LAUNCH_SPREAD_DEG);
         balls.add(spawnBall(world, ballSpawnXPx, ballSpawnYPx, BallColor.RED, launchAngleDeg));
@@ -61,22 +62,45 @@ public final class LevelFactory {
 
     private static LevelData buildLevel2(World world, float ballSpawnXPx, float ballSpawnYPx) {
         Array<Brick> bricks = buildGrid(world, (col, row) -> randomRedOrGreen());
+        assignModifierBricks(bricks);
         Array<Ball> balls = spawnTwoBalls(world, ballSpawnXPx, ballSpawnYPx);
         return new LevelData(bricks, balls, null);
     }
 
     private static LevelData buildLevel3(World world, float ballSpawnXPx, float ballSpawnYPx) {
         Array<Brick> bricks = buildGridWithMetal(world);
+        assignModifierBricks(bricks);
         Array<Ball> balls = spawnTwoBalls(world, ballSpawnXPx, ballSpawnYPx);
         return new LevelData(bricks, balls, null);
     }
 
     private static LevelData buildLevel4(World world, float ballSpawnXPx, float ballSpawnYPx) {
         Array<Brick> bricks = buildGridWithMetal(world);
+        assignModifierBricks(bricks);
         Array<Ball> balls = spawnTwoBalls(world, ballSpawnXPx, ballSpawnYPx);
         Obstacle obstacle = Obstacle.create(world, WORLD_WIDTH / 2f, OBSTACLE_Y_PX,
             OBSTACLE_WIDTH_PX, OBSTACLE_HEIGHT_PX, OBSTACLE_SPEED_PX_PER_SEC, OBSTACLE_MIN_X_PX, OBSTACLE_MAX_X_PX);
         return new LevelData(bricks, balls, obstacle);
+    }
+
+    private static void assignModifierBricks(Array<Brick> bricks) {
+        assignModifierBricks(bricks, BrickColor.RED);
+        assignModifierBricks(bricks, BrickColor.GREEN);
+    }
+
+    private static void assignModifierBricks(Array<Brick> bricks, BrickColor color) {
+        Array<Brick> candidates = new Array<>();
+        for (Brick brick : bricks) {
+            if (brick.getColor() == color) {
+                candidates.add(brick);
+            }
+        }
+        candidates.shuffle();
+
+        int count = Math.min(MODIFIERS_PER_COLOR, candidates.size);
+        for (int i = 0; i < count; i++) {
+            candidates.get(i).setCarriesModifier(true);
+        }
     }
 
     private static BrickColor randomRedOrGreen() {

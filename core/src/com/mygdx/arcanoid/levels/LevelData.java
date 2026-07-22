@@ -1,9 +1,9 @@
 package com.mygdx.arcanoid.levels;
 
 import com.badlogic.gdx.utils.Array;
-import com.mygdx.arcanoid.entities.Ball;
-import com.mygdx.arcanoid.entities.Brick;
-import com.mygdx.arcanoid.entities.Obstacle;
+import com.mygdx.arcanoid.objects.Ball;
+import com.mygdx.arcanoid.objects.Brick;
+import com.mygdx.arcanoid.objects.Obstacle;
 
 public class LevelData {
 

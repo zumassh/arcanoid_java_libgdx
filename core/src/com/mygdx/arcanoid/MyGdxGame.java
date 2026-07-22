@@ -4,7 +4,6 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.mygdx.arcanoid.assets.Assets;
-import com.mygdx.arcanoid.persistence.GameSettings;
 import com.mygdx.arcanoid.screens.MenuScreen;
 
 public class MyGdxGame extends Game {
@@ -18,6 +17,7 @@ public class MyGdxGame extends Game {
         batch = new SpriteBatch();
         assets = new Assets();
         settings = new GameSettings();
+        assets.setUserVolumeMultiplier(settings.getMusicVolume());
         assets.startMusic();
         setScreen(new MenuScreen(this));
     }

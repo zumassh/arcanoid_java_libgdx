@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.mygdx.arcanoid.MyGdxGame;
+import com.mygdx.arcanoid.assets.Assets;
 
 public abstract class AbstractMenuScreen implements Screen {
 
@@ -19,6 +20,7 @@ public abstract class AbstractMenuScreen implements Screen {
 
     @Override
     public void show() {
+        game.assets.setMusicVolume(Assets.MENU_MUSIC_VOLUME);
         stage = new Stage(new ScreenViewport(), game.batch);
         Table root = new Table();
         root.setFillParent(true);

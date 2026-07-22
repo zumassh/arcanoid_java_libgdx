@@ -21,10 +21,12 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.arcanoid.MyGdxGame;
-import com.mygdx.arcanoid.entities.Ball;
-import com.mygdx.arcanoid.entities.Brick;
-import com.mygdx.arcanoid.entities.Obstacle;
-import com.mygdx.arcanoid.entities.Paddle;
+import com.mygdx.arcanoid.assets.Assets;
+import com.mygdx.arcanoid.objects.Ball;
+import com.mygdx.arcanoid.objects.Brick;
+import com.mygdx.arcanoid.objects.Modifier;
+import com.mygdx.arcanoid.objects.Obstacle;
+import com.mygdx.arcanoid.objects.Paddle;
 import com.mygdx.arcanoid.levels.LevelData;
 import com.mygdx.arcanoid.levels.LevelFactory;
 import com.mygdx.arcanoid.physics.BoundsFactory;
@@ -40,7 +42,7 @@ import static com.mygdx.arcanoid.physics.Box2DConstants.WORLD_WIDTH;
 
 public class GameScreen implements Screen {
 
-    private static final boolean DEBUG_PHYSICS = true;
+    private static final boolean DEBUG_PHYSICS = false;
     private static final int MAX_LEVEL = 4;
     private static final float PADDLE_Y_PX = 40f;
     private static final float PADDLE_KEYBOARD_SPEED_PX_PER_SEC = 400f;
@@ -64,6 +66,7 @@ public class GameScreen implements Screen {
     private Paddle paddle;
     private Array<Ball> balls;
     private Array<Brick> bricks;
+    private Array<Modifier> modifiers;
     private Obstacle obstacle;
 
     private float physicsAccumulator = 0f;
@@ -91,6 +94,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void show() {
+        game.assets.setMusicVolume(Assets.GAME_MUSIC_VOLUME);
         world = new World(new Vector2(0, 0), true);
         contactListener = new GameContactListener();
         world.setContactListener(contactListener);
@@ -109,6 +113,7 @@ public class GameScreen implements Screen {
 
         bricks = new Array<>();
         balls = new Array<>();
+        modifiers = new Array<>();
         obstacle = null;
 
         livesRemaining = game.settings.getLivesRemaining();
@@ -127,12 +132,11 @@ public class GameScreen implements Screen {
         levelLabel = new Label("", game.assets.getSkin());
         livesLabel = new Label("", game.assets.getSkin());
         shiftHintLabel = new Label("Нажми Shift, чтобы ускорить платформу!", game.assets.getSkin());
-        shiftHintLabel.setColor(Color.BLACK);
 
         root.add(levelLabel).pad(10f).left().expandX().bottom();
         root.add(livesLabel).pad(10f).right().bottom();
         root.row();
-        root.add(shiftHintLabel).colspan(2).center().padBottom(4f);
+        root.add(shiftHintLabel).colspan(2).center().padBottom(100f);
     }
 
     private void updateHudText() {
@@ -148,6 +152,9 @@ public class GameScreen implements Screen {
         for (Ball ball : balls) {
             world.destroyBody(ball.getBody());
         }
+        for (Modifier modifier : modifiers) {
+            world.destroyBody(modifier.getBody());
+        }
         if (obstacle != null) {
             world.destroyBody(obstacle.getBody());
         }
@@ -162,6 +169,7 @@ public class GameScreen implements Screen {
         bricks = data.bricks;
         balls = data.balls;
         obstacle = data.obstacle;
+        modifiers = new Array<>();
 
         physicsAccumulator = 0f;
         currentLevel = levelNumber;
@@ -245,7 +253,27 @@ public class GameScreen implements Screen {
 
         for (Brick brick : contactListener.bricksToBreak) {
             bricks.removeValue(brick, true);
+            if (brick.carriesModifier()) {
+                modifiers.add(Modifier.create(world, brick.getXPx(), brick.getYPx(), brick.getColor()));
+                game.assets.playModifier();
+            }
             world.destroyBody(brick.getBody());
+        }
+
+        for (Modifier modifier : contactListener.modifiersCaught) {
+            if (!modifiers.removeValue(modifier, true)) {
+                continue;
+            }
+            world.destroyBody(modifier.getBody());
+            livesRemaining++;
+            game.settings.setLivesRemaining(livesRemaining);
+        }
+
+        for (Modifier modifier : contactListener.modifiersLostBottom) {
+            if (!modifiers.removeValue(modifier, true)) {
+                continue;
+            }
+            world.destroyBody(modifier.getBody());
         }
 
         for (Ball ball : contactListener.ballsLostBottom) {
@@ -277,6 +305,10 @@ public class GameScreen implements Screen {
             world.destroyBody(ball.getBody());
         }
         balls.clear();
+        for (Modifier modifier : modifiers) {
+            world.destroyBody(modifier.getBody());
+        }
+        modifiers.clear();
 
         int previousLevel = currentLevel;
         int nextLevel = currentLevel + 1;
@@ -317,6 +349,9 @@ public class GameScreen implements Screen {
         }
         for (Ball ball : balls) {
             drawCentered(ball.getXPx(), ball.getYPx(), Ball.RADIUS_PX * 2f, Ball.RADIUS_PX * 2f, game.assets.getBallTexture(ball.getColor()));
+        }
+        for (Modifier modifier : modifiers) {
+            drawCentered(modifier.getXPx(), modifier.getYPx(), Modifier.WIDTH_PX, Modifier.HEIGHT_PX, game.assets.getModifierTexture(modifier.getColor()));
         }
         batch.end();
 
