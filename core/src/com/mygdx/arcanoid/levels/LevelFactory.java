@@ -16,10 +16,11 @@ public final class LevelFactory {
 
     public static final int GRID_COLS = 7;
     public static final int GRID_ROWS = 4;
-    public static final float BRICK_WIDTH_PX = 96f;
     public static final float BRICK_HEIGHT_PX = 32f;
     public static final float BRICK_GUTTER_PX = 8f;
     public static final float GRID_TOP_MARGIN_PX = 24f;
+    // Ширина посчитана так, чтобы сетка вплотную заполняла мир от стены до стены.
+    public static final float BRICK_WIDTH_PX = (WORLD_WIDTH - (GRID_COLS - 1) * BRICK_GUTTER_PX) / GRID_COLS;
 
     private static final int MAX_METAL_BRICKS = 5;
 
@@ -48,10 +49,13 @@ public final class LevelFactory {
         }
     }
 
+    private static final float LEVEL1_LAUNCH_SPREAD_DEG = 15f;
+
     private static LevelData buildLevel1(World world, float ballSpawnXPx, float ballSpawnYPx) {
         Array<Brick> bricks = buildGrid(world, (col, row) -> BrickColor.RED);
         Array<Ball> balls = new Array<>();
-        balls.add(spawnBall(world, ballSpawnXPx, ballSpawnYPx, BallColor.RED, 90f));
+        float launchAngleDeg = 90f + MathUtils.random(-LEVEL1_LAUNCH_SPREAD_DEG, LEVEL1_LAUNCH_SPREAD_DEG);
+        balls.add(spawnBall(world, ballSpawnXPx, ballSpawnYPx, BallColor.RED, launchAngleDeg));
         return new LevelData(bricks, balls, null);
     }
 

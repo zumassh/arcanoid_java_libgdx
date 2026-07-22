@@ -12,7 +12,7 @@ import com.mygdx.arcanoid.MyGdxGame;
 
 public class SettingsScreen extends AbstractMenuScreen {
 
-    private static final int[] LIVES_OPTIONS = {3, 5, 10};
+    private static final int[] LIVES_OPTIONS = {10, 15, 20};
 
     public SettingsScreen(MyGdxGame game) {
         super(game);

@@ -3,6 +3,7 @@ package com.mygdx.arcanoid.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -44,6 +45,8 @@ public class GameScreen implements Screen {
     private static final float PADDLE_Y_PX = 40f;
     private static final float PADDLE_KEYBOARD_SPEED_PX_PER_SEC = 400f;
     private static final float RESPAWN_ANGLE_SPREAD_DEG = 15f;
+    private static final float BACKGROUND_TRANSITION_DURATION_SEC = 0.6f;
+    private static final float SHIFT_HINT_DURATION_SEC = 2f;
 
     private final MyGdxGame game;
 
@@ -70,9 +73,16 @@ public class GameScreen implements Screen {
     private Stage hudStage;
     private Label livesLabel;
     private Label levelLabel;
+    private Label shiftHintLabel;
+    private float shiftHintElapsed = 0f;
 
     private boolean pendingLevelAdvance = false;
     private boolean pendingGameOver = false;
+
+    private boolean backgroundTransitioning = false;
+    private float backgroundTransitionElapsed = 0f;
+    private int backgroundFromLevel;
+    private int backgroundToLevel;
 
     public GameScreen(MyGdxGame game, int startLevel) {
         this.game = game;
@@ -111,19 +121,24 @@ public class GameScreen implements Screen {
         hudStage = new Stage(new ScreenViewport());
         Table root = new Table();
         root.setFillParent(true);
-        root.top();
+        root.bottom();
         hudStage.addActor(root);
 
         levelLabel = new Label("", game.assets.getSkin());
         livesLabel = new Label("", game.assets.getSkin());
+        shiftHintLabel = new Label("Нажми Shift, чтобы ускорить платформу!", game.assets.getSkin());
+        shiftHintLabel.setColor(Color.BLACK);
 
-        root.add(levelLabel).pad(10f).left().expandX();
-        root.add(livesLabel).pad(10f).right();
+        root.add(levelLabel).pad(10f).left().expandX().bottom();
+        root.add(livesLabel).pad(10f).right().bottom();
+        root.row();
+        root.add(shiftHintLabel).colspan(2).center().padBottom(4f);
     }
 
     private void updateHudText() {
         levelLabel.setText("Уровень " + currentLevel);
         livesLabel.setText("Жизни: " + livesRemaining);
+        shiftHintLabel.setVisible(currentLevel == 1 && shiftHintElapsed < SHIFT_HINT_DURATION_SEC);
     }
 
     private void loadLevel(int levelNumber) {
@@ -151,6 +166,7 @@ public class GameScreen implements Screen {
         physicsAccumulator = 0f;
         currentLevel = levelNumber;
         game.settings.setCurrentLevel(levelNumber);
+        shiftHintElapsed = 0f;
         updateHudText();
     }
 
@@ -190,7 +206,9 @@ public class GameScreen implements Screen {
             viewport.unproject(touchPoint);
             paddleTargetXPx = touchPoint.x;
         } else {
-            float step = PADDLE_KEYBOARD_SPEED_PX_PER_SEC * Gdx.graphics.getDeltaTime();
+            boolean boosted = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+            float speed = boosted ? PADDLE_KEYBOARD_SPEED_PX_PER_SEC * 2f : PADDLE_KEYBOARD_SPEED_PX_PER_SEC;
+            float step = speed * Gdx.graphics.getDeltaTime();
             if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
                 paddleTargetXPx -= step;
             }
@@ -260,19 +278,36 @@ public class GameScreen implements Screen {
         }
         balls.clear();
 
+        int previousLevel = currentLevel;
         int nextLevel = currentLevel + 1;
         if (nextLevel > MAX_LEVEL) {
             game.setScreen(new WinScreen(game));
         } else {
             loadLevel(nextLevel);
+            startBackgroundTransition(previousLevel, nextLevel);
         }
     }
 
+    private void startBackgroundTransition(int fromLevel, int toLevel) {
+        backgroundFromLevel = fromLevel;
+        backgroundToLevel = toLevel;
+        backgroundTransitionElapsed = 0f;
+        backgroundTransitioning = true;
+    }
+
     private void draw(float delta) {
+        if (shiftHintLabel.isVisible()) {
+            shiftHintElapsed += delta;
+            if (shiftHintElapsed >= SHIFT_HINT_DURATION_SEC) {
+                shiftHintLabel.setVisible(false);
+            }
+        }
+
         ScreenUtils.clear(0.1f, 0.1f, 0.15f, 1f);
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        drawBackground(delta);
         for (Brick brick : bricks) {
             drawCentered(brick.getXPx(), brick.getYPx(), brick.getWidthPx(), brick.getHeightPx(), game.assets.getBrickTexture(brick.getColor()));
         }
@@ -290,6 +325,24 @@ public class GameScreen implements Screen {
 
         if (showDebug) {
             debugRenderer.render(world, camera.combined.cpy().scl(PIXELS_PER_METER));
+        }
+    }
+
+    private void drawBackground(float delta) {
+        if (!backgroundTransitioning) {
+            batch.draw(game.assets.getLevelBackgroundTexture(currentLevel), 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+            return;
+        }
+
+        backgroundTransitionElapsed += delta;
+        float progress = Math.min(backgroundTransitionElapsed / BACKGROUND_TRANSITION_DURATION_SEC, 1f);
+        float offsetPx = progress * WORLD_HEIGHT;
+
+        batch.draw(game.assets.getLevelBackgroundTexture(backgroundFromLevel), 0, -offsetPx, WORLD_WIDTH, WORLD_HEIGHT);
+        batch.draw(game.assets.getLevelBackgroundTexture(backgroundToLevel), 0, WORLD_HEIGHT - offsetPx, WORLD_WIDTH, WORLD_HEIGHT);
+
+        if (progress >= 1f) {
+            backgroundTransitioning = false;
         }
     }
 

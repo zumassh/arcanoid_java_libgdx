@@ -31,6 +31,11 @@ public class Assets {
     private final Texture brickMetalTexture;
     private final Texture paddleTexture;
     private final Texture obstacleTexture;
+    private final Texture menuBackgroundTexture;
+    private final Texture level1BackgroundTexture;
+    private final Texture level2BackgroundTexture;
+    private final Texture level3BackgroundTexture;
+    private final Texture level4BackgroundTexture;
 
     private final Music backgroundMusic;
     private final Sound bounceSound;
@@ -38,13 +43,18 @@ public class Assets {
     private final Sound loseSound;
 
     public Assets() {
-        ballRedTexture = createCircleTexture(16, Color.RED);
-        ballGreenTexture = createCircleTexture(16, Color.GREEN);
-        brickRedTexture = createRectTexture(96, 32, Color.FIREBRICK);
-        brickGreenTexture = createRectTexture(96, 32, Color.FOREST);
-        brickMetalTexture = createRectTexture(96, 32, Color.GRAY);
-        paddleTexture = createRectTexture(120, 20, Color.SKY);
-        obstacleTexture = createRectTexture(60, 20, Color.ORANGE);
+        ballRedTexture = loadTexture("textures/ball_red.png");
+        ballGreenTexture = loadTexture("textures/ball_green.png");
+        brickRedTexture = loadTexture("textures/brick_red.png");
+        brickGreenTexture = loadTexture("textures/brick_green.png");
+        brickMetalTexture = loadTexture("textures/brick_metal.png");
+        paddleTexture = loadTexture("textures/paddle.png");
+        obstacleTexture = loadTexture("textures/obstacle.png");
+        menuBackgroundTexture = loadTexture("textures/menu_background.png");
+        level1BackgroundTexture = loadTexture("textures/level_1_background.png");
+        level2BackgroundTexture = loadTexture("textures/level_2_background.png");
+        level3BackgroundTexture = loadTexture("textures/level_3_background.png");
+        level4BackgroundTexture = loadTexture("textures/level_4_background.png");
 
         skin = buildSkin();
 
@@ -112,20 +122,17 @@ public class Assets {
         return builder.toString();
     }
 
-    private Texture createRectTexture(int width, int height, Color color) {
-        Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
-        pixmap.setColor(color);
-        pixmap.fill();
-        Texture texture = new Texture(pixmap);
-        pixmap.dispose();
+    private Texture loadTexture(String path) {
+        Texture texture = new Texture(Gdx.files.internal(path));
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         ownedTextures.add(texture);
         return texture;
     }
 
-    private Texture createCircleTexture(int diameter, Color color) {
-        Pixmap pixmap = new Pixmap(diameter, diameter, Pixmap.Format.RGBA8888);
+    private Texture createRectTexture(int width, int height, Color color) {
+        Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
-        pixmap.fillCircle(diameter / 2, diameter / 2, diameter / 2);
+        pixmap.fill();
         Texture texture = new Texture(pixmap);
         pixmap.dispose();
         ownedTextures.add(texture);
@@ -166,6 +173,25 @@ public class Assets {
 
     public Texture getObstacleTexture() {
         return obstacleTexture;
+    }
+
+    public Texture getMenuBackgroundTexture() {
+        return menuBackgroundTexture;
+    }
+
+    public Texture getLevelBackgroundTexture(int levelNumber) {
+        switch (levelNumber) {
+            case 1:
+                return level1BackgroundTexture;
+            case 2:
+                return level2BackgroundTexture;
+            case 3:
+                return level3BackgroundTexture;
+            case 4:
+                return level4BackgroundTexture;
+            default:
+                throw new IllegalArgumentException("Unknown level: " + levelNumber);
+        }
     }
 
     public void playBounce() {

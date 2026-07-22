@@ -10,7 +10,7 @@ public class GameSettings {
     private static final String KEY_CURRENT_LEVEL = "currentLevel";
     private static final String KEY_LIVES_REMAINING = "livesRemaining";
 
-    private static final int DEFAULT_LIVES_SETTING = 5;
+    private static final int DEFAULT_LIVES_SETTING = 10;
     private static final int DEFAULT_LEVEL = 1;
 
     private final Preferences prefs;

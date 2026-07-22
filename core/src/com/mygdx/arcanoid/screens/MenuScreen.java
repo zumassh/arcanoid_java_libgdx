@@ -1,11 +1,13 @@
 package com.mygdx.arcanoid.screens;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.mygdx.arcanoid.MyGdxGame;
 
 public class MenuScreen extends AbstractMenuScreen {
@@ -16,6 +18,8 @@ public class MenuScreen extends AbstractMenuScreen {
 
     @Override
     protected void buildUI(Table root) {
+        root.setBackground(new TextureRegionDrawable(new TextureRegion(game.assets.getMenuBackgroundTexture())));
+
         Label title = new Label("АРКАНОИД", game.assets.getSkin());
         title.setFontScale(2f);
 
