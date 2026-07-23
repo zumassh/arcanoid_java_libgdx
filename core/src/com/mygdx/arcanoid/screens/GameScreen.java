@@ -12,9 +12,12 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -79,6 +82,9 @@ public class GameScreen implements Screen {
     private Label shiftHintLabel;
     private float shiftHintElapsed = 0f;
 
+    private Stage pauseStage;
+    private boolean paused = false;
+
     private boolean pendingLevelAdvance = false;
     private boolean pendingGameOver = false;
 
@@ -119,7 +125,12 @@ public class GameScreen implements Screen {
         livesRemaining = game.settings.getLivesRemaining();
 
         buildHud();
+        buildPauseUi();
         loadLevel(currentLevel);
+
+        paused = false;
+        Gdx.input.setInputProcessor(hudStage);
+        Gdx.input.setCatchKey(Input.Keys.BACK, true);
     }
 
     private void buildHud() {
@@ -137,6 +148,54 @@ public class GameScreen implements Screen {
         root.add(livesLabel).pad(10f).right().bottom();
         root.row();
         root.add(shiftHintLabel).colspan(2).center().padBottom(100f);
+    }
+
+    private void buildPauseUi() {
+        pauseStage = new Stage(new ScreenViewport());
+        Table root = new Table();
+        root.setFillParent(true);
+        root.setBackground(game.assets.getSkin().newDrawable("white", new Color(0f, 0f, 0f, 0.6f)));
+        pauseStage.addActor(root);
+
+        Label pauseLabel = new Label("Пауза", game.assets.getSkin());
+        pauseLabel.setFontScale(2f);
+
+        TextButton resumeButton = new TextButton("Продолжить игру", game.assets.getSkin());
+        resumeButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                setPaused(false);
+            }
+        });
+
+        TextButton menuButton = new TextButton("Выйти в главное меню", game.assets.getSkin());
+        menuButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.setScreen(new MenuScreen(game));
+            }
+        });
+
+        TextButton exitButton = new TextButton("Выйти из игры", game.assets.getSkin());
+        exitButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                Gdx.app.exit();
+            }
+        });
+
+        root.add(pauseLabel).padBottom(30f).row();
+        root.add(resumeButton).width(320f).height(60f).padBottom(16f).row();
+        root.add(menuButton).width(320f).height(60f).padBottom(16f).row();
+        root.add(exitButton).width(320f).height(60f);
+    }
+
+    private void setPaused(boolean value) {
+        if (paused == value) {
+            return;
+        }
+        paused = value;
+        Gdx.input.setInputProcessor(paused ? pauseStage : hudStage);
     }
 
     private void updateHudText() {
@@ -191,21 +250,32 @@ public class GameScreen implements Screen {
             pendingLevelAdvance = true;
         }
 
-        handleInput();
-        stepPhysics(delta);
-
-        if (pendingGameOver) {
-            pendingGameOver = false;
-            game.setScreen(new LoseScreen(game));
-            return;
-        }
-        if (pendingLevelAdvance) {
-            pendingLevelAdvance = false;
-            advanceLevel();
-            return;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.BACK)) {
+            setPaused(!paused);
         }
 
-        draw(delta);
+        if (!paused) {
+            handleInput();
+            stepPhysics(delta);
+
+            if (pendingGameOver) {
+                pendingGameOver = false;
+                game.setScreen(new LoseScreen(game));
+                return;
+            }
+            if (pendingLevelAdvance) {
+                pendingLevelAdvance = false;
+                advanceLevel();
+                return;
+            }
+        }
+
+        draw(paused ? 0f : delta);
+
+        if (paused) {
+            pauseStage.act(delta);
+            pauseStage.draw();
+        }
     }
 
     private void handleInput() {
@@ -389,10 +459,12 @@ public class GameScreen implements Screen {
     public void resize(int width, int height) {
         viewport.update(width, height, true);
         hudStage.getViewport().update(width, height, true);
+        pauseStage.getViewport().update(width, height, true);
     }
 
     @Override
     public void pause() {
+        setPaused(true);
     }
 
     @Override
@@ -405,8 +477,10 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
+        Gdx.input.setCatchKey(Input.Keys.BACK, false);
         world.dispose();
         debugRenderer.dispose();
         hudStage.dispose();
+        pauseStage.dispose();
     }
 }
